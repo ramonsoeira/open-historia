@@ -160,6 +160,13 @@ export const FEATURE_DEFINITIONS = Object.freeze([
         description: "Rules for this scenario that outrank every default the simulator is given, written last in its instructions and marked as such. Keep them few and absolute: \"No power may field nuclear weapons before 1945.\" \"The Ottoman Empire cannot collapse before 1918.\"",
       }),
       Object.freeze({
+        key: "openHistory",
+        type: "toggle",
+        label: "Open history",
+        defaultValue: true,
+        description: "Standalone historical events may change when player decisions change their causes. Linked events, exact text and chance rules keep their authored conditions.",
+      }),
+      Object.freeze({
         key: "scriptedEvents",
         type: "scripted-events",
         label: "Scripted events",
@@ -577,6 +584,7 @@ export const worldDirectionOf = (features) => {
     eventPace: percent(direction.eventPace, 100),
     worldShare: percent(direction.worldShare, 35),
     priorityRules: typeof direction.priorityRules === "string" ? direction.priorityRules.trim() : "",
+    openHistory: direction.openHistory !== false,
     scriptedEvents: normalizeScriptedEvents(direction.scriptedEvents),
     territoryTempo: percent(direction.territoryTempo, 0),
   };

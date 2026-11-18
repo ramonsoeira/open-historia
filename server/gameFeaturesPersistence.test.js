@@ -19,7 +19,7 @@ import { OWNER_SCHEMA } from "./ownerMigration.js";
 
 // A complete configuration carries every feature; these tests are about the two
 // named in them, so the director rides along at its defaults.
-const WORLD_DIRECTION_DEFAULTS = { enabled: true, eventPace: 100, worldShare: 35, priorityRules: "", scriptedEvents: [], territoryTempo: 0 };
+const WORLD_DIRECTION_DEFAULTS = { enabled: true, eventPace: 100, worldShare: 35, priorityRules: "", openHistory: true, scriptedEvents: [], territoryTempo: 0 };
 const PLAYER_FOCUS_DEFAULTS = { enabled: true, level: "balanced" };
 const GROUPS_DEFAULTS = { enabled: true };
 // (Wars: the fronts feature with a switch each for battlefields, air units, navies and the three transports, all on.)

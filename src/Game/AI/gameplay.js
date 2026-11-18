@@ -303,7 +303,9 @@ import {
   unassessedHighPriorityEntries,
 } from "../../runtime/projects.js";
 import { activeSpies, applySpyOps, espionageBrief, intelligenceOf, isIntelligenceRated, normalizeIntelligenceRating, normalizeIntercepts, normalizeSpies, planCovertOperations, redactText, resolveEspionage, signalClarity } from "../../runtime/spycraft.js";
-import { assertPoliticalLandscapeConsistency, describeElectionsDue, ideologyListText, normalizePoliticalLandscape } from "../../runtime/politics.js";
+import { applyForecastImpacts, continuityInstruction, earlyDecisions, flexibleBeatIds, futureBrief, openHistoryInstruction, replanAfterDecisions, resolveForecasts, retireHistoricalReplays } from "./openHistory.js";
+import { describeCouncil, recordCouncilCompletions } from "../../runtime/civicCouncil.js";
+import { advanceElectionCalendar, assertPoliticalLandscapeConsistency, describeElectionsDue, ideologyListText, normalizePoliticalLandscape } from "../../runtime/politics.js";
 import { foldLandscapeIntoActor } from "../../runtime/politicalLandscapeFold.js";
 import { buildSpyOrdersDirective } from "./spyOrdersDirective.js";
 import { frontOrderLinesBlock } from "./frontPrompt.js";
@@ -3129,8 +3131,8 @@ ${brief}`);
 
   // The Political World's elections that fall due (runtime/politics.js describeElectionsDue): the Politics tab's
   // flag, now the Political World's, whose governments keep the next election (politicalActors.js).
-  const elections = describeElectionsDue(world.politicalActors, { date: normalizeString(game?.gameDate) });
-  if (elections) blocks.push(elections);
+  const council = describeCouncil(world, game?.country, game?.gameDate);
+  if (council) blocks.push(council);
 
   try {
     const reportsOnFile = describeReportsForPrompt(world.reports);
@@ -10635,6 +10637,8 @@ const applySimulationResult = async ({
     logDebugEvent("turn", "Political background failed; the political state and clock are unchanged.", error, { problem: true });
   }
 
+  nextWorld = recordCouncilCompletions(nextWorld, nextGame.gameDate);
+
   // Permanent compact Stats history: snapshots only the numeric sheets that
   // already exist, so it adds no AI work when tracking is off or not due.
   nextWorld = captureCountryStatsHistory(nextWorld, {
@@ -16892,15 +16896,35 @@ const runJumpSegments = async ({ context, onEvents, onProgress, signal, state })
       // Start-day events may already be part of the scenario prehistory. Mark
       // every authored beat resolved, but do not narrate those already present
       // in the initial canonical timeline a second time. Matching is one-to-one.
-      const scriptedBeats = includeOriginScripted
+      const eligibleBeats = includeOriginScripted
         ? scriptedBeatsNotAlreadyWritten(
           scriptedPlan.eligible,
           normalizeArray(bundle.events).filter((entry) => dateKey(entry?.date) === dateKey(state.segmentOrigin)),
           { language: scriptedLanguage },
         )
         : scriptedPlan.eligible;
+      const flexible = flexibleBeatIds(direction?.scriptedEvents || [], direction?.openHistory);
+      const forecasts = eligibleBeats.filter(beat => flexible.has(beat.id));
+      const scriptedBeats = eligibleBeats.filter(beat => !flexible.has(beat.id));
+      const calendar = direction?.scriptedEvents || [];
+      const open = direction?.openHistory && !context.amend;
+      const evidence = { actions: bundle.actions, projects: ledgerWorld.projects || [], from: state.segmentOrigin, resolved: state.scriptedEventState };
+      const upcoming = open ? futureBrief(calendar, { date: state.segmentOrigin, ...evidence }) : [];
+      const planFor = (events, through) => {
+        const decisions = open ? earlyDecisions(events, upcoming, { ...evidence, through }) : {};
+        const plan = replanAfterDecisions(scriptedPlan, decisions, {
+          world: ledgerWorld, resolved: state.scriptedEventState, rolls: (state.divergenceRolls ||= {}),
+        });
+        return { decisions, plan };
+      };
+      const politicalCalendar = context.amend ? "" : describeElectionsDue(ledgerWorld.politicalActors, {
+        fromDate: state.segmentOrigin, date: segmentTarget, player: bundle.game.country,
+      });
       const scriptedPoliticalRequirements = scriptedPoliticalImpactRequirements(scriptedBeats, { world: ledgerWorld });
-      const scriptedPoliticalInstruction = buildScriptedPoliticalImpactInstruction(scriptedPoliticalRequirements, { world: ledgerWorld });
+      const scriptedPoliticalInstruction = [
+        buildScriptedPoliticalImpactInstruction(scriptedPoliticalRequirements, { world: ledgerWorld }),
+        open ? continuityInstruction(upcoming, state.scriptedEventState) : "",
+      ].filter(Boolean).join("\n\n");
       state.structuralScriptedFallbackBlocked = scriptedPoliticalRequirements.length > 0;
       const [pacedMin, pacedMax] = segmentCount > 1
         ? segmentEventRange(spanDays, plannedActionShare, { pace: direction?.eventPace, totalDays: safeDays })
@@ -17096,7 +17120,8 @@ const runJumpSegments = async ({ context, onEvents, onProgress, signal, state })
         // silence, not elapsed time, so a long segment is never mistaken for a
         // stalled one (and a segmented jump gets that window per segment, since it
         // is per request). Cancel works either way.
-        userMessage: [lastTurnReceipt, gmChangeNarration, politicalDecisionContext,
+        userMessage: [lastTurnReceipt, gmChangeNarration, politicalDecisionContext, politicalCalendar,
+          openHistoryInstruction(forecasts, scriptedPlan.resolutions),
           // What failed for the player, on a retry from a turn held on it
           // (playerTurnFailures.js): the whole skip again, or only those events.
           normalizeString(context.retryDirective),
@@ -17214,9 +17239,16 @@ const runJumpSegments = async ({ context, onEvents, onProgress, signal, state })
           // told so it carries the consequences. An auto jump that stopped short
           // owes only the beats up to where it stopped. Before the map's tempo:
           // the events that tell them are marked, and the tempo leaves them be.
-          if (scriptedBeats.length) {
+          applyForecastImpacts(candidate?.events, forecasts);
+          const candidateThrough = (mode === "auto" && candidate.stopDate) || segmentTarget;
+          const candidateHistory = planFor(candidate.events, candidateThrough);
+          if (open) retireHistoricalReplays(candidate, calendar, { ...state.scriptedEventState, ...candidateHistory.decisions });
+          const requiredHistory = candidateHistory.plan === scriptedPlan ? scriptedBeats
+            : candidateHistory.plan.eligible.filter(beat => !flexible.has(beat.id)
+              && (!includeOriginScripted || beat.date !== state.segmentOrigin || eligibleBeats.some(row => row.id === beat.id)));
+          if (requiredHistory.length) {
             const stopKey = mode === "auto" ? dateKey(candidate?.stopDate) : null;
-            const due = stopKey === null ? scriptedBeats : scriptedBeats.filter((beat) => dateKey(beat.date) <= stopKey);
+            const due = stopKey === null ? requiredHistory : requiredHistory.filter((beat) => dateKey(beat.date) <= stopKey);
             const scripted = ensureScriptedEventsWithImpacts(candidate?.events, due, { language: scriptedLanguage });
             if (scripted.inserted.length) {
               candidate.events = scripted.events;
@@ -17286,6 +17318,10 @@ const runJumpSegments = async ({ context, onEvents, onProgress, signal, state })
               : null,
           });
           if (worldChangeError) return worldChangeError;
+          if (Object.keys(candidateHistory.decisions).length
+            && Object.keys(planFor(candidate.events, candidateThrough).decisions).length !== Object.keys(candidateHistory.decisions).length) {
+            return "An early historical outcome lost its world change. Use an ordinary event id for an unconfirmed attempt.";
+          }
           // Claims are generation-only semantic metadata. Canonical Political
           // World state remains politicalActorOps; timeline events never persist
           // a second writable copy of the same truth.
@@ -17383,11 +17419,12 @@ const runJumpSegments = async ({ context, onEvents, onProgress, signal, state })
       // accepted. A held/rejected attempt persists nothing; its ephemeral plan
       // remains on `state` so Retry sees the same Chance roll and condition result.
       const scriptedStopDate = normalizeString(payload?.stopDate) || segmentTarget;
-      const scriptedCommit = commitScriptedEventPlan(state.scriptedEventState, scriptedPlan, {
-        throughDate: scriptedStopDate,
-      });
-      state.scriptedEventState = scriptedCommit.state;
-      state.scriptedEventPending = {};
+      const commitHistory = (events) => {
+        const { decisions, plan } = planFor(events, scriptedStopDate);
+        const acceptedPlan = resolveForecasts(plan, forecasts, events, scriptedStopDate);
+        return commitScriptedEventPlan({ ...state.scriptedEventState, ...decisions }, acceptedPlan, { throughDate: scriptedStopDate });
+      };
+      const scriptedCommit = commitHistory(normalizeArray(payload?.events));
 
       // runJsonTask's deterministic fallback bypasses the candidate validator.
       // Preserve the existing scripted-event guarantee there too: an eligible
@@ -17466,6 +17503,8 @@ const runJumpSegments = async ({ context, onEvents, onProgress, signal, state })
           payload[key] = keepRetryBoundRecords(payload[key], retryEventIds);
         }
       }
+      state.scriptedEventState = commitHistory(normalizeArray(payload?.events)).state;
+      state.scriptedEventPending = {};
       state.segmentPayloads.push(payload);
       // What this segment asked the model to move, for the skip's one motion
       // repair pass. Recorded only with the committed segment, so a failed
@@ -17478,6 +17517,10 @@ const runJumpSegments = async ({ context, onEvents, onProgress, signal, state })
         stopDate: normalizeString(payload?.stopDate) || segmentTarget,
         round: (bundle.game.round || 1) + 1,
       });
+      const electionCalendar = advanceElectionCalendar(state.ledgerWorld.politicalActors, payload.events);
+      if (electionCalendar !== state.ledgerWorld.politicalActors) {
+        state.ledgerWorld = { ...state.ledgerWorld, politicalActors: electionCalendar };
+      }
       state.generatedSoFar.push(...normalizeArray(payload?.events));
       // The segment is in: its raw preview gives way to the events actually taken.
       showEvents?.([]);

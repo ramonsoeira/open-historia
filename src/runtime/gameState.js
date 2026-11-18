@@ -78,6 +78,8 @@ import { battlefieldHeldClaimants } from "./fronts/heldRegions.js";
 import { foldPoliticsIntoActors } from "./politicalLandscapeFold.js";
 import { activeWars } from "./gameFeatures.js";
 
+import { normalizeCouncils } from "./civicCouncil.js";
+
 export const GAME_DEFAULTS = {
   country: "",
   difficulty: "standard",
@@ -4516,6 +4518,7 @@ export const normalizeWorldState = (world) => {
     ...nextWorld,
     countryTags,
     countryStats,
+    ...(nextWorld.civicCouncils ? { civicCouncils: normalizeCouncils(nextWorld.civicCouncils) } : {}),
     politicalActors: formerPolitics && typeof formerPolitics === "object" && Object.keys(formerPolitics).length > 0
       ? foldPoliticsIntoActors(nextWorld.politicalActors, formerPolitics)
       : normalizePoliticalActors(nextWorld.politicalActors),

@@ -27,7 +27,14 @@ import { SWARMS_CHROME } from "./swarmsChrome.js";
 import { THEMES_CHROME } from "./themesChrome.js";
 import { WARS_AND_FRONTS_2_CHROME } from "./warsAndFronts2Chrome.js";
 
+const CABINET_CHROME = {
+  button: { background: "#d4bc87", color: "#172923", border: "1px solid #e7d4ab" },
+  arrow: { color: "#d4bc87", background: "#223a30" },
+  dot: { on: "#d4bc87", off: "#607565" }, skip: { color: "#e4d4ad" },
+};
+
 export const THEMES = Object.freeze({
+  cabinet: { Page: lazy(() => import("./Cabinet.jsx")), chrome: CABINET_CHROME },
   aiOverhaul: { Page: lazy(() => import("./AiOverhaul.jsx")), chrome: AI_OVERHAUL_CHROME },
   themes: { Page: lazy(() => import("./Themes.jsx")), chrome: THEMES_CHROME },
   rostra: { Page: lazy(() => import("./Rostra.jsx")), chrome: ROSTRA_CHROME },

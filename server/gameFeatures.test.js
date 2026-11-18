@@ -235,8 +235,8 @@ test("a malformed old Conditional with no conditions remains fail-closed", () =>
 // ---- World direction: the director's settings ----
 
 test("world direction ships on, at the built-in pace, with the one-third floor checked and no priority rules", () => {
-  assert.deepEqual(featureDefaults().worldDirection, { enabled: true, eventPace: 100, worldShare: 35, priorityRules: "", scriptedEvents: [], territoryTempo: 0 });
-  assert.deepEqual(worldDirectionOf(featureDefaults()), { eventPace: 100, worldShare: 35, priorityRules: "", scriptedEvents: [], territoryTempo: 0 });
+  assert.deepEqual(featureDefaults().worldDirection, { enabled: true, eventPace: 100, worldShare: 35, priorityRules: "", openHistory: true, scriptedEvents: [], territoryTempo: 0 });
+  assert.deepEqual(worldDirectionOf(featureDefaults()), { eventPace: 100, worldShare: 35, priorityRules: "", openHistory: true, scriptedEvents: [], territoryTempo: 0 });
 });
 
 test("its numbers are clamped to their range and rounded to whole percents", () => {
@@ -259,7 +259,7 @@ test("a game overrides the director field by field, and a blank rule follows the
   const scenario = { worldDirection: { eventPace: 60, worldShare: 50, priorityRules: "The Tsar survives." } };
   assert.deepEqual(normalizeFeatureOverrides({ worldDirection: { eventPace: 150, priorityRules: "" } }), { worldDirection: { eventPace: 150 } });
   const resolved = resolveFeatures(scenario, { worldDirection: { eventPace: 150, priorityRules: "  " } });
-  assert.deepEqual(worldDirectionOf(resolved), { eventPace: 150, worldShare: 50, priorityRules: "The Tsar survives.", scriptedEvents: [], territoryTempo: 0 });
+  assert.deepEqual(worldDirectionOf(resolved), { eventPace: 150, worldShare: 50, priorityRules: "The Tsar survives.", openHistory: true, scriptedEvents: [], territoryTempo: 0 });
   const own = resolveFeatures(scenario, { worldDirection: { priorityRules: "The Tsar may fall." } });
   assert.equal(worldDirectionOf(own).priorityRules, "The Tsar may fall.");
 });
