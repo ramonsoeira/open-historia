@@ -54,6 +54,26 @@ import { RELEASES } from "./notesReleases.js";
 // make UPDATES, newest first by date.
 const NEW_UPDATES = [
   {
+    id: "2026-11-cabinet",
+    date: "2026-11-18",
+    kind: "major",
+    banners: [{
+      theme: "cabinet", title: "A government of your own",
+      lead: "Choose who governs, what the country funds and which moments of history your decisions could change.",
+      sections: [
+        { icon: "book", heading: "At the Workshop", items: [
+          "Describe a premise to draft a scenario with a starting cabinet, a backstory and possible futures.",
+          "Review the draft before adding it to the current map.",
+        ] },
+        { icon: "people", heading: "In government", items: [
+          "Read the names of ministers and legislators and see what each ministry costs.",
+          "Fund a project and link it to a future event. Finishing in time can avert the event.",
+          "An action that brings a historical outcome forward changes the calendar. Its consequences carry into later turns.",
+        ] },
+      ],
+    }],
+  },
+  {
     // "remove the reccomended thing from command code on the popup when you start a game and dont have a configured key"
     // (the owner, 2026-11-10): GameUI/apiSetupPrompt.jsx ChoiceCard has no recommended badge or highlight.
     id: "2026-11-setup-choices-alike",

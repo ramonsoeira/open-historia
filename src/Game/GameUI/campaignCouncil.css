@@ -1,0 +1,30 @@
+/*! Open Historia — cabinet papers and budget. AGPL-3.0-or-later (see LICENSE). */
+.oh-council { color: #ecf0ea; background: #182522; border: 1px solid #49645c; border-top: 3px solid #c9ae78; border-radius: 12px; margin: .85rem 0; padding: clamp(.75rem, 2vw, 1.2rem); min-width: 0; font-size: .83rem; }
+.oh-council h3 { font-family: Georgia, serif; font-size: 1.3rem; margin: 0 0 .5rem; color: #f3e4c3; }
+.oh-council h4 { font-size: .8rem; color: #e4d4ad; margin: .85rem 0 .4rem; }
+.oh-council p, .oh-council small { color: #c1cec5; line-height: 1.5; overflow-wrap: anywhere; }
+.oh-council p { margin: .35rem 0 .75rem; }
+.oh-council label { display: grid; gap: .3rem; font-weight: 650; margin: .65rem 0; }
+.oh-council input, .oh-council textarea, .oh-council select { box-sizing: border-box; min-width: 0; width: 100%; color: #f3f4ed; border: 1px solid #597065; border-radius: .4rem; background-color: #101a17; font: inherit; padding: .5rem; }
+.oh-council textarea { min-height: 4rem; resize: vertical; }
+.oh-council button, .oh-council summary { cursor: pointer; font: inherit; font-weight: 700; }
+.oh-council button { background: #dbc99f; color: #18201b; border: 0; border-radius: .4rem; padding: .55rem .85rem; }
+.oh-council button:disabled { opacity: .5; cursor: default; }
+.oh-council :focus-visible { outline: 2px solid #f4d88f; outline-offset: 2px; }
+.oh-council-budget, .oh-council-roster { display: grid; gap: .55rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr)); }
+.oh-council-budget { margin: .75rem 0; }
+.oh-council-budget > div { border-left: 2px solid #b8a373; background: #21332c; padding: .5rem .6rem; }
+.oh-council dt { font-size: .7rem; color: #ccdbd0; }
+.oh-council dd { margin: .18rem 0 0; font-variant-numeric: tabular-nums; font-size: 1.25rem; font-weight: 700; }
+.oh-council-roster { grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); }
+.oh-council ul, .oh-council ol { list-style: none; padding: 0; margin: 0 0 .65rem; }
+.oh-council li { padding: .4rem 0; border-top: 1px solid #3e5148; overflow-wrap: anywhere; }
+.oh-council li small { display: block; }
+.oh-council-roster li, .oh-council-dates li { display: flex; align-items: baseline; gap: .6rem; }
+.oh-council-roster li { justify-content: space-between; }
+.oh-council time { white-space: nowrap; font-variant-numeric: tabular-nums; color: #e8d5ab; }
+.oh-council-preview, .oh-council-form { margin-top: .8rem; padding-top: .7rem; border-top: 1px solid #586b5e; }
+.oh-council summary { padding: .35rem 0; color: #e8d5ab; }
+.oh-council [role=alert] { color: #ffb9a6; margin-top: .6rem; }
+.oh-council fieldset { min-width: 0; border: 1px solid #51665a; border-radius: .45rem; margin: .6rem 0; padding: .5rem .7rem; }
+.oh-council .oh-council-secondary { background: transparent; color: #eddbb5; border: 1px solid #897c60; margin: .4rem; }

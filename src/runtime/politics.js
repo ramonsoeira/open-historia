@@ -390,14 +390,36 @@ export const electionDue = (nextElection, date) => {
 // line a polity whose government's next election is due (electionDue), with
 // what holding one is in the Political World's ops (politicalActorOps.js). ""
 // when none is. At most ELECTIONS_TOLD_MOST.
+// Segments are generated before the turn writes its impacts. Carry just the
+// accepted election schedule into the next segment to avoid holding a vote twice.
+export function advanceElectionCalendar(actors, events) {
+  let next = actors;
+  for (const event of events || []) {
+    for (const op of event.impacts?.politicalActorOps || []) {
+      if (op.op !== "set-government" || !op.polityKey) continue;
+      let patch;
+      try { patch = op.patch || JSON.parse(op.argsJson).patch; } catch { continue; }
+      if (typeof patch?.nextElection !== "string") continue;
+      const actor = next?.byPolity?.[op.polityKey] || {};
+      next = { ...next, byPolity: { ...next?.byPolity,
+        [op.polityKey]: { ...actor, government: { ...actor.government, nextElection: patch.nextElection } } } };
+    }
+  }
+  return next;
+}
+
 export const ELECTIONS_TOLD_MOST = 12;
-export const describeElectionsDue = (politicalActors, { date = "" } = {}) => {
+export const describeElectionsDue = (politicalActors, { date = "", fromDate = "", player = "" } = {}) => {
   const lines = [];
-  for (const [polity, actor] of Object.entries(politicalActors?.byPolity ?? {})) {
+  const countries = Object.entries(politicalActors?.byPolity ?? {});
+  if (player) countries.sort(([a], [b]) => Number(b === player) - Number(a === player));
+  for (const [polity, actor] of countries) {
     const government = actor?.government ?? {};
     const when = text(government.nextElection, 80);
     const due = electionDue(when, date);
     if (!due) continue;
+    const exact = /^(\d{4}-\d{2}-\d{2})$/.exec(when)?.[1];
+    if (fromDate && exact && exact > date) continue;
     const seats = Number(government.legislatureSeats) > 0 ? ` (${Math.round(Number(government.legislatureSeats))} seats)` : "";
     lines.push(`- ${polity}: ${text(government.legislature) || "its legislature"}${seats}, next election ${when}${due === "overdue" ? ": due now, hold it in this answer" : ": this year, hold it if its date falls in this answer"}`);
     if (lines.length >= ELECTIONS_TOLD_MOST) break;

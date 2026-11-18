@@ -51,6 +51,8 @@ import { LABEL_FONT_SUGGESTIONS } from "../../runtime/mapSettings.js";
 import FactionCreator from "./FactionCreator.jsx";
 import { groupRegions, normalizeGroupAreas, normalizeGroups } from "../../runtime/groups.js";
 import FeaturesSectionEditor from "./FeaturesSectionEditor.jsx";
+import { ScenarioDraftPanel } from "./CampaignCouncil.jsx";
+import { applyScenarioDraft, withCampaignSeed } from "../AI/campaignDraft.js";
 import StatsSheetEditor, { normalizeStatsEditorValue } from "./StatsSheetEditor.jsx";
 import InstitutionAuthoringPanel from "./InstitutionAuthoringPanel.jsx";
 import PrehistoryPanel from "./PrehistoryPanel.jsx";
@@ -1986,6 +1988,7 @@ const EditorDrawer = ({
   kind,
   onChange,
   onChangePrompt,
+  onCampaignDraft,
   onClearAsset,
   onClose,
   onDelete,
@@ -2240,6 +2243,9 @@ const EditorDrawer = ({
 
           <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: isMobile ? `1rem calc(0.9rem + ${SAFE_RIGHT}) 1rem calc(0.9rem + ${SAFE_LEFT})` : "1.2rem 1.4rem 1.6rem" }}>
       {editorSection === "overview" && kind === "scenario" && communityCard}
+      {editorSection === "overview" && kind === "scenario" && (
+        <ScenarioDraftPanel key={record.id} form={formState} countries={countryOptions} onApply={onCampaignDraft} />
+      )}
       {editorSection === "overview" && (
         <>
           <div style={editorCardStyle}>
@@ -3750,7 +3756,7 @@ const LibraryTopBar = ({ onOpenSettings }) => {
           prompts,
           subtitle: editorState.subtitle,
           world: {
-            ...currentWorld,
+            ...withCampaignSeed(currentWorld, editorState.campaignSeed),
             allowedUnitTypes: Array.isArray(editorState.allowedUnitTypes)
               ? editorState.allowedUnitTypes
               : [...UNIT_TYPES],
@@ -5569,6 +5575,7 @@ const LibraryTopBar = ({ onOpenSettings }) => {
         isBusy={isBusy || loading}
         kind={editorKind}
         onChange={handleEditorChange}
+        onCampaignDraft={(draft, country) => setEditorState(current => applyScenarioDraft(current, draft, country))}
         onChangePrompt={handlePromptChange}
         onClearAsset={handleEditorAssetClear}
         onClose={closeEditor}

@@ -552,6 +552,7 @@ const TEMPLATE_WORLD_OVERRIDE_KEYS = [
   "ownerCodes",
   "polityOverrides",
   "politicalActors",
+  "civicCouncils",
   "institutions",
   "powerStatus",
   "agreements",

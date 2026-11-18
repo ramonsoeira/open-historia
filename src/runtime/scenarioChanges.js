@@ -298,7 +298,7 @@ const WAR_MAP_NORMALIZERS = Object.freeze({
 export const warMapListOf = (field, value) => (WAR_MAP_NORMALIZERS[field] ? WAR_MAP_NORMALIZERS[field](value) : []);
 // The Politics tab's generated world (PoliticalWorldGenerationPanel,
 // InstitutionAuthoringPanel): diffed entry by entry where entries have ids.
-export const POLITICS_FIELDS = ["politicalActors", "institutions", "powerStatus", "agreements", "canonContext"];
+export const POLITICS_FIELDS = ["politicalActors", "institutions", "powerStatus", "agreements", "canonContext", "civicCouncils"];
 
 const flattenGuidance = (pack) => {
   const guidance = normalizePackGuidance(pack);

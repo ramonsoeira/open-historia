@@ -1,5 +1,7 @@
 /*! Open Historia — native eligibility and exactly-once resolution for scenario scripted events © 2026 Nicholas Krol, AGPL-3.0-or-later (see LICENSE). */
 
+import { divertedEvents } from "../../runtime/civicCouncil.js";
+
 const text = (value) => String(value ?? "").trim();
 const lower = (value) => text(value).toLowerCase();
 const array = (value) => Array.isArray(value) ? value : [];
@@ -125,6 +127,8 @@ export const normalizeScriptedEventState = (value) => {
     };
     if (Number.isFinite(Number(entry.roll))) normalized.roll = Math.max(0, Math.min(1, Number(entry.roll)));
     if (Number.isFinite(Number(entry.percent))) normalized.percent = Math.max(0, Math.min(100, Number(entry.percent)));
+    if (text(entry.cause)) normalized.cause = text(entry.cause).slice(0, 180);
+    if (text(entry.divertedBy)) normalized.divertedBy = text(entry.divertedBy).slice(0, 160);
     if (text(entry.selectedOutcomeId)) normalized.selectedOutcomeId = text(entry.selectedOutcomeId).slice(0, 160);
     if (Number.isFinite(Number(entry.outcomeRoll))) normalized.outcomeRoll = Math.max(0, Math.min(1, Number(entry.outcomeRoll)));
     if (entry.effectiveWeights && typeof entry.effectiveWeights === "object" && !Array.isArray(entry.effectiveWeights)) {
@@ -393,6 +397,7 @@ export const planScriptedEvents = (eventsInput, {
   const pending = { ...record(pendingState) };
   const resolutions = [];
   const eligible = [];
+  const diversions = divertedEvents(world);
 
   for (const event of array(eventsInput)) {
     const id = text(event?.id);
@@ -401,7 +406,10 @@ export const planScriptedEvents = (eventsInput, {
     let resolution = pending[id];
     if (!resolution || !["fired", "skipped"].includes(lower(resolution.outcome))) {
       const stateForConditions = resolvedScriptedState(resolved, pending);
-      resolution = resolutionFor(event, world, random, stateForConditions);
+      const initiative = diversions.get(id);
+      resolution = initiative
+        ? { outcome: "skipped", mode: "initiative", date: text(event.date), divertedBy: initiative.name }
+        : resolutionFor(event, world, random, stateForConditions);
       if (resolution.outcome === "fired" && array(event?.outcomes).length) {
         const branch = selectWeightedOutcome(event, random);
         if (branch.error) {
@@ -419,6 +427,7 @@ export const planScriptedEvents = (eventsInput, {
         outcome: resolution.outcome,
         mode: resolution.mode,
         date: resolution.date,
+        ...(resolution.divertedBy ? { divertedBy: resolution.divertedBy } : {}),
         ...(Number.isFinite(resolution.roll) ? { roll: resolution.roll } : {}),
         ...(Number.isFinite(resolution.percent) ? { percent: resolution.percent } : {}),
         ...(text(resolution.selectedOutcomeId) ? { selectedOutcomeId: text(resolution.selectedOutcomeId) } : {}),
@@ -454,6 +463,7 @@ export const commitScriptedEventPlan = (resolvedState, plan, { throughDate = "" 
       mode: lower(resolution.mode || event?.trigger?.mode || "always"),
       date: text(event?.date),
       resolvedDate: text(event?.date),
+      ...(resolution.divertedBy ? { divertedBy: resolution.divertedBy } : {}),
       ...(Number.isFinite(resolution.roll) ? { roll: resolution.roll } : {}),
       ...(Number.isFinite(resolution.percent) ? { percent: resolution.percent } : {}),
       ...(text(resolution.selectedOutcomeId) ? { selectedOutcomeId: text(resolution.selectedOutcomeId) } : {}),

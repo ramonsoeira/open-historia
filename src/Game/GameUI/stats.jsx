@@ -27,6 +27,7 @@ import { assessPoliticalLandscape, ensureCountryAssessed, ensureIntelligenceRate
 import { wantsRating } from "../AI/militaryRating.js";
 import { militaryLookup } from "../../runtime/militaryStats.js";
 import PoliticalOverview from "./PoliticalOverview.jsx";
+import { CountryCouncil } from "./CampaignCouncil.jsx";
 import { filterAndSortCountryRelations } from "./countryDiplomacyView.js";
 import { buildRanking, openingMetric, rankingMetricsFor } from "./countryRanking.js";
 import { MANPOWER_PERCENT, formatMilitaryPower, militaryProfile } from "../../runtime/militaryPower.js";
@@ -1786,6 +1787,7 @@ const StatsPaneBody = ({ active, mapRef, requestedTarget = "", onConsumeTarget }
                 startDate: String(game?.startDate || game?.gameDate || ""),
                 round: Math.max(0, Math.trunc(Number(game?.round) || 0)),
                 gameKey: String(activeGameId || game?.id || game?.name || JSON_URLS.game || "game"),
+                scriptedEventState: game.scriptedEventState || {},
             };
             setPlayer((current) => {
                 if (current.gameKey !== nextPlayer.gameKey) {
@@ -2504,6 +2506,11 @@ const StatsPaneBody = ({ active, mapRef, requestedTarget = "", onConsumeTarget }
                     compiling={partiesCompile.busy}
                     compileError={partiesCompile.error}
                 />
+            )}
+            {statsView === "politics" && worldSnapshot && (
+                <CountryCouncil key={[activeGameId, politicalKey, player.date].join("|")}
+                    world={worldSnapshot} country={politicalKey} player={player} gameId={activeGameId}
+                    resolved={player.scriptedEventState} onWorld={setWorldSnapshot} />
             )}
             {statsView === "politics" && (
                 <GroupsOnTerritory world={worldSnapshot} targetCountry={targetCountry} isPlayer={Boolean(player.code) && targetCountry === player.code} mapRef={mapRef} />
